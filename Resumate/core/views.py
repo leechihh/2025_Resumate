@@ -8,7 +8,7 @@ from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Candidate, JobPosition, Application
 from .services import extract_text_from_pdf, parse_resume_with_gemini, analyze_job_match
-from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer
+from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer, ApplicationSerializer
 import random
 
 class ResumeUploadView(APIView):
@@ -146,3 +146,13 @@ class JobPositionListCreateView(generics.ListCreateAPIView):
 class JobPositionDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = JobPosition.objects.all()
     serializer_class = JobPositionSerializer
+
+class JobApplicationListView(generics.ListAPIView):
+    serializer_class = ApplicationSerializer
+
+    def get_queryset(self):
+        # 從網址取得 job_id (例如 jobs/1/applications/ 的 1)
+        job_id = self.kwargs['pk']
+        
+        # 撈出該職缺的所有紀錄，並依照分數由高到低排序 (高分在前)
+        return Application.objects.filter(job_id=job_id).order_by('-ai_match_score')
