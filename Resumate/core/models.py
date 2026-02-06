@@ -63,6 +63,8 @@ class Application(models.Model):
     
     applied_at = models.DateTimeField(auto_now_add=True)
 
+    note = models.TextField(blank=True, null=True, verbose_name="內部筆記")
+
     def __str__(self):
         return f"{self.candidate.name} -> {self.job.title}"
 

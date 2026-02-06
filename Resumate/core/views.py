@@ -156,3 +156,7 @@ class JobApplicationListView(generics.ListAPIView):
         
         # 撈出該職缺的所有紀錄，並依照分數由高到低排序 (高分在前)
         return Application.objects.filter(job_id=job_id).order_by('-ai_match_score')
+
+class ApplicationDetailView(generics.RetrieveUpdateAPIView):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer

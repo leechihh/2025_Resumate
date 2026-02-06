@@ -14,6 +14,8 @@ export default function JobDetail() {
     const [job, setJob] = useState(null);
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [noteContent, setNoteContent] = useState("");
+    const [isEditingNote, setIsEditingNote] = useState(false);
 
     const [blindMode] = useState(location.state?.blindMode || false);
 
@@ -65,6 +67,32 @@ export default function JobDetail() {
         } finally {
             setIsUploading(false);
             e.target.value = '';
+        }
+    };
+
+    // 當點擊列表打開 Modal 時，同步更新筆記內容
+    const handleOpenModal = (app) => {
+        setSelectedApp(app);
+        setNoteContent(app.note || ""); // 如果後端有筆記就顯示，沒有就空字串
+    };
+
+    // 筆記儲存邏輯
+    const handleSaveNote = async () => {
+        if (!selectedApp) return;
+        try {
+            // 呼叫我們剛剛寫好的後端 API (PATCH 方法)
+            await axios.patch(`applications/${selectedApp.id}/`, {
+                note: noteContent
+            });
+
+            alert("✅ 筆記已儲存");
+
+            // 更新本地資料，讓畫面同步 (可選，但建議做)
+            setSelectedApp({ ...selectedApp, note: noteContent });
+            fetchJobData(); // 背景重新整理列表，確保資料最新
+        } catch (error) {
+            alert("❌ 儲存失敗");
+            console.error(error);
         }
     };
 
@@ -142,7 +170,7 @@ export default function JobDetail() {
                             {applications.map((app, index) => (
                                 <tr
                                     key={app.id}
-                                    onClick={() => setSelectedApp(app)} // 點擊開啟詳細報告
+                                    onClick={() => handleOpenModal(app)} // 點擊開啟詳細報告
                                     className="hover:bg-blue-50/50 transition cursor-pointer group"
                                 >
                                     <td className="p-4">
@@ -268,17 +296,60 @@ export default function JobDetail() {
                                         </div>
                                     </div>
 
-                                    {/* HR 筆記功能 (UI Mock) */}
+                                    {/* HR 筆記功能 */}
                                     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                                        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><PenTool size={18} /> 內部筆記</h3>
-                                        <textarea
-                                            className="w-full p-3 border rounded-lg text-sm bg-yellow-50 focus:ring-2 focus:ring-yellow-400 outline-none"
-                                            rows="4"
-                                            placeholder="在此輸入面試筆記或備註 (僅 HR 可見)..."
-                                        ></textarea>
-                                        <button className="mt-2 w-full py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-black transition">
-                                            儲存筆記
-                                        </button>
+                                        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><PenTool size={18} /> 內部筆記</h3>
+
+                                        {isEditingNote ? (
+                                            /* 編輯模式 */
+                                            <div className="space-y-3 animate-fade-in">
+                                                <textarea
+                                                    className="w-full p-3 border border-yellow-300 rounded-lg text-sm bg-yellow-50 focus:ring-2 focus:ring-yellow-400 outline-none transition"
+                                                    rows="5"
+                                                    placeholder="在此輸入面試筆記..."
+                                                    value={noteContent}
+                                                    onChange={(e) => setNoteContent(e.target.value)}
+                                                    autoFocus
+                                                />
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            handleSaveNote();
+                                                            setIsEditingNote(false);
+                                                        }}
+                                                        className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition"
+                                                    >
+                                                        💾 儲存筆記
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setIsEditingNote(false);
+                                                            setNoteContent(selectedApp.note || "");
+                                                        }}
+                                                        className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                                                    >
+                                                        ✕ 取消
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* 閱讀模式 */
+                                            <div className="space-y-3">
+                                                <div
+                                                    className="p-4 bg-yellow-50/50 rounded-lg border border-yellow-200 min-h-[120px] text-sm text-gray-700 whitespace-pre-wrap cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 transition"
+                                                    onClick={() => setIsEditingNote(true)}
+                                                    title="點擊以編輯"
+                                                >
+                                                    {noteContent ? noteContent : <span className="text-gray-400 italic">📝 尚無筆記，點擊此處新增...</span>}
+                                                </div>
+                                                <button
+                                                    onClick={() => setIsEditingNote(true)}
+                                                    className="w-full py-2 text-blue-600 text-sm font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition"
+                                                >
+                                                    ✏️ 編輯筆記
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

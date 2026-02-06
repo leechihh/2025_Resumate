@@ -5,8 +5,10 @@ from .views import (
     MatchJobView, 
     JobPositionListCreateView, 
     JobPositionDetailView,
-    JobApplicationListView
+    JobApplicationListView,
+    ApplicationDetailView
 )
+
 
 urlpatterns = [
     path('upload/', ResumeUploadView.as_view(), name='resume-upload'),
@@ -14,4 +16,5 @@ urlpatterns = [
     path('jobs/', JobPositionListCreateView.as_view(), name='job-list-create'), # GET: 列表, POST: 新增
     path('jobs/<int:pk>/', JobPositionDetailView.as_view(), name='job-detail'),
     path('jobs/<int:pk>/applications/', JobApplicationListView.as_view(), name='job-applications'), # GET: 詳細, PUT: 修改, DELETE: 刪除
+    path('applications/<int:pk>/', ApplicationDetailView.as_view(), name='application-detail'),
 ]
