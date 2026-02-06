@@ -16,7 +16,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
 class CandidateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Candidate
-        fields = ['id', 'name', 'email', 'phone', 'parsed_data'] # 包含 parsed_data 以便前端顯示摘要
+        fields = ['id', 'name', 'email', 'phone', 'resume_file', 'parsed_data'] # 包含 parsed_data 以便前端顯示摘要
 
 class ApplicationSerializer(serializers.ModelSerializer):
     # 這裡用 nested serializer，把 candidate 的詳細資料直接包進來

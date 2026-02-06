@@ -2,7 +2,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './Layout';
 import Dashboard from './pages/Dashboard';
-import JobDetail from './pages/JobDetail'; // 暫時還是空的
+import JobDetail from './pages/JobDetail';
+import JobEdit from './pages/JobEdit';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="jobs/:jobId" element={<JobDetail />} />
+          <Route path="jobs/:jobId/edit" element={<JobEdit />} />
           <Route path="email" element={<div className="text-center py-20">信件中心開發中...</div>} />
         </Route>
       </Routes>
