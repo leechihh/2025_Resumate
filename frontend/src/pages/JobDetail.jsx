@@ -84,7 +84,61 @@ export default function JobDetail() {
             e.target.value = '';
         }
     };
-    // 
+    // 修改狀態 API
+    const handleStatusChange = async (newStatus) => {
+        if (!selectedApp) return;
+        
+        // 狀態標籤對照
+        const statusConfig = {
+            'new': '新投遞',
+            'screening': '篩選中',
+            'interview': '面試中',
+            'offered': '已錄取',
+            'rejected': '已婉拒',
+        };
+        
+        // 確認對話框
+        const isConfirmed = window.confirm(
+            `確認要將狀態更改為「${statusConfig[newStatus]}」嗎？`
+        );
+        
+        if (!isConfirmed) return; // 取消則不進行後續操作
+        
+        try {
+            // 樂觀更新 (Optimistic Update): 先改畫面，感覺比較快
+            const updatedApp = { ...selectedApp, status: newStatus };
+            setSelectedApp(updatedApp);
+            setApplications(prev => prev.map(a => a.id === updatedApp.id ? updatedApp : a));
+
+            // 呼叫後端
+            await axios.patch(`applications/${selectedApp.id}/`, { status: newStatus });
+            alert(`✅ 狀態已更新為「${statusConfig[newStatus]}」`);
+        } catch (error) {
+            alert("❌ 狀態更新失敗");
+            fetchJobData(); // 失敗就重抓
+        }
+    };
+    // 生成信件 API
+    const handleGenerateEmail = async (type) => {
+        setIsGeneratingEmail(true);
+        try {
+            const res = await axios.post('generate-email/', {
+                application_id: selectedApp.id,
+                email_type: type
+            });
+            setEmailContent(res.data.email_content);
+        } catch (error) {
+            alert("生成失敗");
+        } finally {
+            setIsGeneratingEmail(false);
+        }
+    };
+
+    // 過濾邏輯
+    const filteredApplications = applications.filter(app => {
+        if (statusFilter === 'all') return true;
+        return app.status === statusFilter;
+    });
 
     // 當點擊列表打開 Modal 時，同步更新筆記內容
     const handleOpenModal = (app) => {
@@ -164,6 +218,25 @@ export default function JobDetail() {
                     </div>
                 </div>
             </div>
+            {/* 🚀 新增：狀態過濾器 Tabs */}
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                {['all', 'new', 'screening', 'interview', 'offered', 'rejected'].map(status => {
+                    const info = STATUS_MAP[status] || { label: '全部', color: 'bg-gray-100 text-gray-600' };
+                    const isActive = statusFilter === status;
+                    return (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${isActive
+                                    ? 'bg-gray-800 text-white shadow-md'
+                                    : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                                }`}
+                        >
+                            {info.label} ({status === 'all' ? applications.length : applications.filter(a => a.status === status).length})
+                        </button>
+                    )
+                })}
+            </div>
 
             {/* 候選人列表 */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -185,7 +258,7 @@ export default function JobDetail() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {applications.map((app, index) => (
+                            {filteredApplications.map((app, index) => (
                                 <tr
                                     key={app.id}
                                     onClick={() => handleOpenModal(app)} // 點擊開啟詳細報告
@@ -366,6 +439,85 @@ export default function JobDetail() {
                                                 >
                                                     ✏️ 編輯筆記
                                                 </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 🎯 狀態變更 */}
+                                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                                        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><FileText size={18} /> 更新狀態</h3>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['new', 'screening', 'interview', 'offered', 'rejected'].map((s) => {
+                                                const statusConfig = {
+                                                    'new': { label: '新投遞', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+                                                    'screening': { label: '篩選中', color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+                                                    'interview': { label: '面試中', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+                                                    'offered': { label: '已錄取', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+                                                    'rejected': { label: '已婉拒', color: 'bg-gray-200 text-gray-700 hover:bg-gray-300' },
+                                                };
+                                                const config = statusConfig[s];
+                                                const isActive = selectedApp.status === s;
+                                                return (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => handleStatusChange(s)}
+                                                        className={`py-2 rounded-lg text-sm font-medium transition ${config.color} ${isActive ? 'ring-2 ring-offset-1 ring-gray-400' : ''}`}
+                                                    >
+                                                        {config.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 📧 生成信件功能 */}
+                                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                                        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Mail size={18} /> 生成信件</h3>
+                                        
+                                        {emailContent ? (
+                                            /* 信件內容顯示 */
+                                            <div className="space-y-3 animate-fade-in">
+                                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 max-h-[200px] overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap">
+                                                    {emailContent}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(emailContent);
+                                                            alert('✅ 已複製到剪貼板');
+                                                        }}
+                                                        className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                                                    >
+                                                        📋 複製內容
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setEmailContent("")}
+                                                        className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                                                    >
+                                                        ✕ 清空
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* 生成選項 */
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {[
+                                                        { type: 'interview', label: '📞 邀請面試', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+                                                        { type: 'rejection', label: '💌 婉拒信', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+                                                        { type: 'offer', label: '🎉 錄取通知', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+                                                    ].map(({ type, label, color }) => (
+                                                        <button
+                                                            key={type}
+                                                            onClick={() => handleGenerateEmail(type)}
+                                                            disabled={isGeneratingEmail}
+                                                            className={`w-full py-2 rounded-lg text-sm font-medium transition ${color} ${isGeneratingEmail ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        >
+                                                            {isGeneratingEmail ? <Loader2 className="inline animate-spin mr-2" size={16} /> : ''}
+                                                            {label}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         )}
                                     </div>

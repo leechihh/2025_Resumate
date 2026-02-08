@@ -158,12 +158,12 @@ def analyze_job_match(candidate_data, job_description, culture_traits):
 def generate_email(candidate_name, job_title, email_type):
         """
         呼叫 Gemini 生成信件內容
-        :param candidate_name: 候選人姓名
-        :param job_title: 職缺名稱
-        :param email_type: 信件類型 (interview, rejection, offer)
-        :return: AI 生成的信件文字
         """
-        
+        if not api_key:
+            return None
+
+        client = genai.Client(api_key=api_key)
+
         # 1. 根據類型決定 Prompt 的意圖
         if email_type == 'interview':
             prompt_intent = "邀請面試"
@@ -194,12 +194,14 @@ def generate_email(candidate_name, job_title, email_type):
         """
 
         try:
-            # 3. 呼叫模型
-            model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(prompt)
+            # 3. 修正後的呼叫方式 (統一使用 client.models.generate_content)
+            response = client.models.generate_content(
+                model="gemini-3-flash-preview", # 這裡改用新版模型名稱，例如 gemini-2.0-flash 或 gemini-1.5-flash
+                contents=prompt,
+                # 這裡不需要 JSON mime_type，因為我們要的是純文字
+            )
             return response.text
+            
         except Exception as e:
-            # 這裡可以記錄 Log
-            print(f"AI Service Error: {e}")
-            # 拋出錯誤讓 View 去處理，或者回傳預設錯誤訊息
+            print(f"AI 生成信件錯誤: {e}")
             raise Exception("AI 服務暫時無法使用，請稍後再試。")
