@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import axios from '../api/axios';
 import {
-    ArrowLeft, Upload, Eye, EyeOff, FileText,
-    Loader2, Trophy, X, Download, Mail, Phone, Calendar, PenTool
+    ArrowLeft, Upload, Eye, EyeOff, FileText, Loader2, Trophy, X, Download,
+    Mail, Phone, PenTool, CheckCircle, XCircle, Clock, Send
 } from 'lucide-react';
 
 
@@ -14,17 +14,32 @@ export default function JobDetail() {
     const [job, setJob] = useState(null);
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [noteContent, setNoteContent] = useState("");
-    const [isEditingNote, setIsEditingNote] = useState(false);
-
     const [blindMode] = useState(location.state?.blindMode || false);
-
     // 📄 個人報告 Modal 狀態
     const [selectedApp, setSelectedApp] = useState(null);
+
+    // Mails and Notes
+    const [noteContent, setNoteContent] = useState("");
+    const [isEditingNote, setIsEditingNote] = useState(false);
 
     // 上傳相關
     const fileInputRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [emailContent, setEmailContent] = useState("");     // 📧 存生成的信
+    const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+
+    // 過濾器狀態
+    const [statusFilter, setStatusFilter] = useState('all'); // all, new, screening, interview, offered, rejected
+
+    // 狀態對照表 (方便顯示中文)
+    const STATUS_MAP = {
+        'new': { label: '新投遞', color: 'bg-blue-100 text-blue-700', icon: Clock },
+        'screening': { label: '篩選中', color: 'bg-yellow-100 text-yellow-700', icon: FileText },
+        'interview': { label: '面試中', color: 'bg-purple-100 text-purple-700', icon: Phone },
+        'offered': { label: '已錄取', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+        'rejected': { label: '已婉拒', color: 'bg-gray-200 text-gray-500', icon: XCircle },
+    };
+
 
     // 初始化資料
     const fetchJobData = async () => {
@@ -69,11 +84,14 @@ export default function JobDetail() {
             e.target.value = '';
         }
     };
+    // 
 
     // 當點擊列表打開 Modal 時，同步更新筆記內容
     const handleOpenModal = (app) => {
         setSelectedApp(app);
         setNoteContent(app.note || ""); // 如果後端有筆記就顯示，沒有就空字串
+        setEmailContent(""); // 每次打開 Modal 都重置生成的信內容
+        setIsEditingNote(false);
     };
 
     // 筆記儲存邏輯

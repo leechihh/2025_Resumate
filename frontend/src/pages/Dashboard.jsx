@@ -18,6 +18,7 @@ function Dashboard() {
     // 表單狀態
     const [formData, setFormData] = useState({
         title: '', description: '', requirements: '', culture_traits: '',
+        status: 'open'
     });
 
     // 取得資料
@@ -105,7 +106,33 @@ function Dashboard() {
                     <h2 className="text-xl font-bold mb-4 text-gray-700">📝 新增一筆職缺</h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* 簡化顯示，請直接用原本的表單內容填入這裡 */}
-                        <input name="title" value={formData.title} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="職稱" required />
+                        {/* 在 form 裡面 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* 狀態選單 */}
+                            <div>
+                                <select
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border rounded-lg bg-gray-50 h-[42px]"
+                                >
+                                    <option value="open">🟢 開放中</option>
+                                    <option value="closed">🔴 已關閉</option>
+                                </select>
+                            </div>
+
+                            {/* 職稱 (原本的 input，設為 col-span-2 讓它長一點) */}
+                            <div className="md:col-span-2">
+                                <input
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border rounded-lg"
+                                    placeholder="職稱 (e.g. Backend Engineer)"
+                                    required
+                                />
+                            </div>
+                        </div>
                         <textarea name="description" value={formData.description} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="JD" required />
                         <textarea name="requirements" value={formData.requirements} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="硬性條件" required />
                         <input name="culture_traits" value={formData.culture_traits} onChange={handleChange} className="w-full p-2 border rounded-lg" placeholder="特質" />

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Candidate, JobPosition, Application
-from .services import extract_text_from_pdf, parse_resume_with_gemini, analyze_job_match
+from .services import extract_text_from_pdf, parse_resume_with_gemini, analyze_job_match, generate_email
 from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer, ApplicationSerializer
 import random
 
@@ -160,3 +160,29 @@ class JobApplicationListView(generics.ListAPIView):
 class ApplicationDetailView(generics.RetrieveUpdateAPIView):
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
+
+class GenerateEmailView(APIView):
+    def post(self, request):
+        # 1. 解析前端傳來的資料
+        application_id = request.data.get('application_id')
+        email_type = request.data.get('email_type', 'interview') 
+        
+        try:
+            # 2. 從資料庫撈取必要的物件
+            app = Application.objects.get(id=application_id)
+            
+            # 3. 呼叫 Service (將複雜邏輯外包)
+            email_content = generate_email(
+                candidate_name=app.candidate.name,
+                job_title=app.job.title,
+                email_type=email_type
+            )
+            
+            # 4. 回傳結果
+            return Response({'email_content': email_content})
+            
+        except Application.DoesNotExist:
+            return Response({'error': '找不到該應徵紀錄'}, status=404)
+        except Exception as e:
+            # 這裡會接到 Service 拋出的錯誤
+            return Response({'error': str(e)}, status=500)

@@ -3,6 +3,7 @@ import json
 from google import genai # <--- 注意：引用名稱變了
 from google.genai import types # <--- 用來設定 Config
 from pypdf import PdfReader
+from django.conf import settings
 from dotenv import load_dotenv
 
 # 設定 API Key
@@ -153,3 +154,52 @@ def analyze_job_match(candidate_data, job_description, culture_traits):
     except Exception as e:
         print(f"AI 配對分析錯誤: {e}")
         return None
+    
+def generate_email(candidate_name, job_title, email_type):
+        """
+        呼叫 Gemini 生成信件內容
+        :param candidate_name: 候選人姓名
+        :param job_title: 職缺名稱
+        :param email_type: 信件類型 (interview, rejection, offer)
+        :return: AI 生成的信件文字
+        """
+        
+        # 1. 根據類型決定 Prompt 的意圖
+        if email_type == 'interview':
+            prompt_intent = "邀請面試"
+            tone = "專業且熱情"
+        elif email_type == 'rejection':
+            prompt_intent = "婉拒信 (感謝函)"
+            tone = "溫暖、禮貌且保留未來合作機會"
+        elif email_type == 'offer':
+            prompt_intent = "錄取通知 (Offer Letter)"
+            tone = "恭喜、正式且激勵人心"
+        else:
+            prompt_intent = "通知信"
+            tone = "專業"
+
+        # 2. 組裝 Prompt
+        prompt = f"""
+        請你扮演一位專業的 HR，撰寫一封繁體中文的 Email。
+        
+        收件人：{candidate_name}
+        應徵職位：{job_title}
+        信件目的：{prompt_intent}
+        語氣設定：{tone}
+        
+        請直接提供信件標題與內文，不要有額外的說明或開場白。
+        格式如下：
+        標題：...
+        內文：...
+        """
+
+        try:
+            # 3. 呼叫模型
+            model = genai.GenerativeModel('gemini-pro')
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            # 這裡可以記錄 Log
+            print(f"AI Service Error: {e}")
+            # 拋出錯誤讓 View 去處理，或者回傳預設錯誤訊息
+            raise Exception("AI 服務暫時無法使用，請稍後再試。")
