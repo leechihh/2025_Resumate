@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import JobPosition, Application, Candidate
+from .models import JobPosition, Application, Candidate, EmailTask
 
 class ResumeUploadSerializer(serializers.Serializer):
     file = serializers.FileField() # 告訴前端：這裡有一個檔案上傳欄位
@@ -25,3 +25,8 @@ class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = ['id', 'candidate', 'status', 'ai_match_score', 'ai_analysis_report', 'applied_at', 'note']
+
+class EmailTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailTask
+        fields = ['id', 'application', 'email_type', 'status', 'subject', 'body', 'custom_intent', 'created_at', 'updated_at', 'sent_at', 'error_message']

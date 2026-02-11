@@ -6,9 +6,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Candidate, JobPosition, Application
+from .models import Candidate, JobPosition, Application, EmailTask
 from .services import extract_text_from_pdf, parse_resume_with_gemini, analyze_job_match, generate_email
-from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer, ApplicationSerializer
+from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer, ApplicationSerializer, EmailTaskSerializer
 import random
 
 class ResumeUploadView(APIView):
@@ -142,7 +142,6 @@ class JobPositionListCreateView(generics.ListCreateAPIView):
     serializer_class = JobPositionSerializer
 
 # 2. (選用) 單一職缺修改與刪除 (GET / PUT / DELETE)
-# 如果你之後想在網頁上修改 JD，可以加上這個
 class JobPositionDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = JobPosition.objects.all()
     serializer_class = JobPositionSerializer
@@ -186,3 +185,22 @@ class GenerateEmailView(APIView):
         except Exception as e:
             # 這裡會接到 Service 拋出的錯誤
             return Response({'error': str(e)}, status=500)
+
+# EmailTask 相關 Views
+class EmailTaskListCreateView(generics.ListCreateAPIView):
+    """列表顯示 / 新增 EmailTask"""
+    queryset = EmailTask.objects.all().order_by('-created_at')
+    serializer_class = EmailTaskSerializer
+
+class EmailTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """檢視 / 修改 / 刪除 EmailTask"""
+    queryset = EmailTask.objects.all()
+    serializer_class = EmailTaskSerializer
+
+class ApplicationEmailTasksView(generics.ListAPIView):
+    """獲取特定應徵紀錄的所有 EmailTask"""
+    serializer_class = EmailTaskSerializer
+
+    def get_queryset(self):
+        application_id = self.kwargs['pk']
+        return EmailTask.objects.filter(application_id=application_id).order_by('-created_at')

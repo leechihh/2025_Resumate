@@ -69,21 +69,71 @@ class Application(models.Model):
         return f"{self.candidate.name} -> {self.job.title}"
 
 
-# 4. 信件紀錄 (EmailLog)
-class EmailLog(models.Model):
-    STATUS_CHOICES = [('draft', '草稿'), ('sent', '已寄出'), ('failed', '失敗')]
-
-    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='emails')
-    subject = models.CharField(max_length=255)
-    body = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    sent_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-# 5. 內部筆記 (Note)
+# 4. 內部筆記 (Note)
 class Note(models.Model):
     application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='notes')
     author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True) # 連結到 Django 內建使用者
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+# 5. 寄信紀錄 (EmailTasks)
+class EmailTask(models.Model):
+    # 定義狀態
+    STATUS_CHOICES = [
+        ('draft', '草稿 (Draft)'),
+        ('queued', '排程中 (Queued)'),
+        ('sent', '已寄出 (Sent)'),
+        ('failed', '失敗 (Failed)'),
+    ]
+
+    # 定義信件類型 (回應你的 Q1：這裡加上 'other')
+    TYPE_CHOICES = [
+        ('interview', '面試邀約'),
+        ('rejection', '感謝函 (婉拒)'),
+        ('offer', '錄取通知'),
+        ('other', '其他 / 客製化'),  # 👈 新增這個
+    ]
+
+    # 關聯：這封信是寫給哪個應徵紀錄的？
+    application = models.ForeignKey(
+        Application, 
+        on_delete=models.CASCADE, 
+        related_name='email_tasks'
+    )
+    
+    email_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='interview')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # 內容
+    subject = models.CharField(max_length=255, verbose_name="信件主旨")
+    body = models.TextField(verbose_name="信件內文")
+    
+    # 記錄客製化需求 (如果是 'other' 類型，這裡存使用者的要求)
+    custom_intent = models.CharField(max_length=255, blank=True, null=True, verbose_name="客製化意圖")
+
+    # 時間紀錄
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    
+    # 錯誤訊息 (如果寄送失敗，存報錯內容)
+    error_message = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.get_email_type_display()} - {self.application.candidate.name} ({self.get_status_display()})"
+
+# 6. Email Template 信件模板
+class EmailTemplate(models.Model):
+    TYPE_CHOICES = [
+        ('interview', '面試邀約'),
+        ('rejection', '感謝函 (婉拒)'),
+        ('offer', '錄取通知'),
+        ('other', '預設通用'),
+    ]
+    
+    template_type = models.CharField(max_length=20, choices=TYPE_CHOICES, unique=True, verbose_name="類型")
+    subject_template = models.CharField(max_length=255, verbose_name="預設主旨")
+    body_template = models.TextField(verbose_name="預設內文 (支援 {{name}} 變數)")
+
+    def __str__(self):
+        return self.get_template_type_display()

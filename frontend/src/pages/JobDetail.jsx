@@ -87,7 +87,7 @@ export default function JobDetail() {
     // 修改狀態 API
     const handleStatusChange = async (newStatus) => {
         if (!selectedApp) return;
-        
+
         // 狀態標籤對照
         const statusConfig = {
             'new': '新投遞',
@@ -96,14 +96,14 @@ export default function JobDetail() {
             'offered': '已錄取',
             'rejected': '已婉拒',
         };
-        
+
         // 確認對話框
         const isConfirmed = window.confirm(
             `確認要將狀態更改為「${statusConfig[newStatus]}」嗎？`
         );
-        
+
         if (!isConfirmed) return; // 取消則不進行後續操作
-        
+
         try {
             // 樂觀更新 (Optimistic Update): 先改畫面，感覺比較快
             const updatedApp = { ...selectedApp, status: newStatus };
@@ -228,8 +228,8 @@ export default function JobDetail() {
                             key={status}
                             onClick={() => setStatusFilter(status)}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${isActive
-                                    ? 'bg-gray-800 text-white shadow-md'
-                                    : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                                ? 'bg-gray-800 text-white shadow-md'
+                                : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
                                 }`}
                         >
                             {info.label} ({status === 'all' ? applications.length : applications.filter(a => a.status === status).length})
@@ -473,7 +473,7 @@ export default function JobDetail() {
                                     {/* 📧 生成信件功能 */}
                                     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                                         <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Mail size={18} /> 生成信件</h3>
-                                        
+
                                         {emailContent ? (
                                             /* 信件內容顯示 */
                                             <div className="space-y-3 animate-fade-in">
@@ -503,9 +503,9 @@ export default function JobDetail() {
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-1 gap-2">
                                                     {[
-                                                        { type: 'interview', label: '📞 邀請面試', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-                                                        { type: 'rejection', label: '💌 婉拒信', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-                                                        { type: 'offer', label: '🎉 錄取通知', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+                                                        { type: 'interview', label: '邀請面試', color: 'bg-gray-200 text-black-700 hover:bg-gray-400' },
+                                                        { type: 'rejection', label: '婉拒信', color: 'bg-gray-200 text-black-700 hover:bg-gray-400' },
+                                                        { type: 'offer', label: '錄取通知', color: 'bg-gray-200 text-black-700 hover:bg-gray-400' },
                                                     ].map(({ type, label, color }) => (
                                                         <button
                                                             key={type}
