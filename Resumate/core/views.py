@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Candidate, JobPosition, Application, EmailTask
-from .services import extract_text_from_pdf, parse_resume_with_gemini, analyze_job_match, generate_email
+from .services import extract_text_from_pdf, parse_resume_with_gemini, analyze_job_match, generate_email, polish_email
 from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer, ApplicationSerializer, EmailTaskSerializer
 import random
 
@@ -187,7 +187,7 @@ class GenerateEmailView(APIView):
             return Response({'error': str(e)}, status=500)
 
 # EmailTask 相關 Views
-class EmailTaskListCreateView(generics.ListCreateAPIView):
+class EmailTaskCreateView(generics.CreateAPIView):
     """列表顯示 / 新增 EmailTask"""
     queryset = EmailTask.objects.all().order_by('-created_at')
     serializer_class = EmailTaskSerializer
@@ -204,3 +204,18 @@ class ApplicationEmailTasksView(generics.ListAPIView):
     def get_queryset(self):
         application_id = self.kwargs['pk']
         return EmailTask.objects.filter(application_id=application_id).order_by('-created_at')
+
+class EmailPolishView(APIView):
+    def post(self, request):
+        current_content = request.data.get('current_content', '')
+        user_instruction = request.data.get('user_instruction', '')
+
+        if not current_content or not user_instruction:
+            return Response({'error': '請提供原始內容與修改指令'}, status=400)
+
+        try:
+            # 呼叫 Service 層的邏輯
+            polished_content = polish_email(current_content, user_instruction)
+            return Response({'polished_content': polished_content})
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)

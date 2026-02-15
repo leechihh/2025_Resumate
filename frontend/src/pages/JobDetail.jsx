@@ -1,3 +1,4 @@
+import EmailComposeModal from '../components/EmailComposeModal';
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import axios from '../api/axios';
@@ -27,6 +28,9 @@ export default function JobDetail() {
     const [isUploading, setIsUploading] = useState(false);
     const [emailContent, setEmailContent] = useState("");     // 📧 存生成的信
     const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false); // 🆕 新增：控制寫信 Modal
+    const [targetEmailApp, setTargetEmailApp] = useState(null);      // 🆕 新增：要寫信給誰
 
     // 過濾器狀態
     const [statusFilter, setStatusFilter] = useState('all'); // all, new, screening, interview, offered, rejected
@@ -132,6 +136,11 @@ export default function JobDetail() {
         } finally {
             setIsGeneratingEmail(false);
         }
+    };
+
+    const handleOpenEmailCompose = (app) => {
+        setTargetEmailApp(app); // 設定對象
+        setIsEmailModalOpen(true); // 開啟視窗
     };
 
     // 過濾邏輯
@@ -503,17 +512,18 @@ export default function JobDetail() {
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-1 gap-2">
                                                     {[
-                                                        { type: 'interview', label: '邀請面試', color: 'bg-gray-200 text-black-700 hover:bg-gray-400' },
-                                                        { type: 'rejection', label: '婉拒信', color: 'bg-gray-200 text-black-700 hover:bg-gray-400' },
-                                                        { type: 'offer', label: '錄取通知', color: 'bg-gray-200 text-black-700 hover:bg-gray-400' },
+                                                        { type: 'interview', label: '📞 邀請面試', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+                                                        { type: 'rejection', label: '💌 婉拒信', color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+                                                        { type: 'offer', label: '🎉 錄取通知', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
                                                     ].map(({ type, label, color }) => (
                                                         <button
                                                             key={type}
-                                                            onClick={() => handleGenerateEmail(type)}
-                                                            disabled={isGeneratingEmail}
-                                                            className={`w-full py-2 rounded-lg text-sm font-medium transition ${color} ${isGeneratingEmail ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            onClick={() => {
+                                                                setTargetEmailApp(selectedApp);
+                                                                setIsEmailModalOpen(true);
+                                                            }}
+                                                            className={`w-full py-2 rounded-lg text-sm font-medium transition ${color}`}
                                                         >
-                                                            {isGeneratingEmail ? <Loader2 className="inline animate-spin mr-2" size={16} /> : ''}
                                                             {label}
                                                         </button>
                                                     ))}
@@ -576,6 +586,14 @@ export default function JobDetail() {
                     </div>
                 </div>
             )}
+
+            {/* EmailComposeModal for writing emails */}
+            <EmailComposeModal
+                isOpen={isEmailModalOpen}
+                onClose={() => setIsEmailModalOpen(false)}
+                application={targetEmailApp}
+                onSuccess={fetchJobData}
+            />
         </div>
     );
 }

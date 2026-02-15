@@ -205,3 +205,34 @@ def generate_email(candidate_name, job_title, email_type):
         except Exception as e:
             print(f"AI 生成信件錯誤: {e}")
             raise Exception("AI 服務暫時無法使用，請稍後再試。")
+        
+def polish_email(current_content, user_instruction):
+        """
+        AI 潤飾信件
+        :param current_content: 目前的草稿內容
+        :param user_instruction: 使用者的指令 (例如: 語氣再委婉一點、幫我縮短一點)
+        """
+        client = genai.Client(api_key=api_key)
+        if not client: return "AI Service Unavailable"
+
+        prompt = f"""
+        你是一位專業的文字編輯。請根據使用者的指令，修改以下這封 Email 草稿。
+
+        【原始草稿】
+        {current_content}
+
+        【修改指令】
+        {user_instruction}
+
+        請直接回傳修改後的完整信件內容（包含標題與內文），不要有額外的對話或說明。
+        保持繁體中文。
+        """
+
+        try:
+            response = client.models.generate_content(
+                model="gemini-3-flash-preview", 
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            return f"潤飾失敗: {str(e)}"

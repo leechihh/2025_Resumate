@@ -8,9 +8,10 @@ from .views import (
     JobApplicationListView,
     ApplicationDetailView,
     GenerateEmailView,
-    EmailTaskListCreateView,
     EmailTaskDetailView,
     ApplicationEmailTasksView,
+    EmailPolishView,
+    EmailTaskCreateView,
 )
 
 
@@ -23,6 +24,7 @@ urlpatterns = [
     path('applications/<int:pk>/', ApplicationDetailView.as_view(), name='application-detail'),
     path('applications/<int:pk>/email-tasks/', ApplicationEmailTasksView.as_view(), name='application-email-tasks'),
     path('generate-email/', GenerateEmailView.as_view(), name='generate-email'),
-    path('email-tasks/', EmailTaskListCreateView.as_view(), name='email-task-list-create'),
     path('email-tasks/<int:pk>/', EmailTaskDetailView.as_view(), name='email-task-detail'),
+    path('polish-email/', EmailPolishView.as_view(), name='email-polish'),
+    path('email-tasks/', EmailTaskCreateView.as_view(), name='email-task-create'),
 ]
