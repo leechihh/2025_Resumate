@@ -30,3 +30,18 @@ class EmailTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmailTask
         fields = ['id', 'application', 'email_type', 'status', 'subject', 'body', 'custom_intent', 'created_at', 'updated_at', 'sent_at', 'error_message']
+
+class EmailTaskListSerializer(serializers.ModelSerializer):
+    """用於信件中心列表，附帶候選人與職缺資訊"""
+    candidate_name = serializers.CharField(source='application.candidate.name', read_only=True)
+    candidate_email = serializers.CharField(source='application.candidate.email', read_only=True)
+    job_title = serializers.CharField(source='application.job.title', read_only=True)
+    application_id = serializers.IntegerField(source='application.id', read_only=True)
+
+    class Meta:
+        model = EmailTask
+        fields = [
+            'id', 'application_id', 'email_type', 'status',
+            'subject', 'body', 'created_at', 'sent_at', 'error_message',
+            'candidate_name', 'candidate_email', 'job_title',
+        ]

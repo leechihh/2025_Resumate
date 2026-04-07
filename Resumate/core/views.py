@@ -8,7 +8,10 @@ from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Candidate, JobPosition, Application, EmailTask
 from .services import extract_text_from_pdf, parse_resume_with_gemini, analyze_job_match, generate_email, polish_email
-from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer, ApplicationSerializer, EmailTaskSerializer
+from .serializers import ResumeUploadSerializer, MatchJobSerializer, JobPositionSerializer, ApplicationSerializer, EmailTaskSerializer, EmailTaskListSerializer
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
 import random
 
 class ResumeUploadView(APIView):
@@ -214,8 +217,60 @@ class EmailPolishView(APIView):
             return Response({'error': '請提供原始內容與修改指令'}, status=400)
 
         try:
-            # 呼叫 Service 層的邏輯
             polished_content = polish_email(current_content, user_instruction)
             return Response({'polished_content': polished_content})
         except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+
+class EmailListView(generics.ListAPIView):
+    """信件中心：列出所有 EmailTask，附帶候選人與職缺資訊"""
+    serializer_class = EmailTaskListSerializer
+
+    def get_queryset(self):
+        qs = EmailTask.objects.select_related(
+            'application__candidate', 'application__job'
+        ).order_by('-created_at')
+
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        return qs
+
+
+class SendEmailView(APIView):
+    """將指定 EmailTask 寄出，並更新狀態"""
+    def post(self, request, pk):
+        try:
+            task = EmailTask.objects.select_related(
+                'application__candidate'
+            ).get(id=pk)
+
+            if task.status == 'sent':
+                return Response({'error': '此信件已寄出'}, status=400)
+
+            recipient = task.application.candidate.email
+
+            send_mail(
+                subject=task.subject,
+                message=task.body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[recipient],
+                fail_silently=False,
+            )
+
+            task.status = 'sent'
+            task.sent_at = timezone.now()
+            task.error_message = None
+            task.save()
+
+            return Response({'message': f'已成功寄出至 {recipient}', 'sent_at': task.sent_at})
+
+        except EmailTask.DoesNotExist:
+            return Response({'error': '找不到此信件'}, status=404)
+        except Exception as e:
+            task.status = 'failed'
+            task.error_message = str(e)
+            task.save()
             return Response({'error': str(e)}, status=500)

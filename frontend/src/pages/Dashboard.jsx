@@ -204,15 +204,58 @@ function Dashboard() {
             {matchResult && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setMatchResult(null)}>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        {/* 這裡放原本的 Modal 內容 (省略以節省篇幅) ... */}
                         <div className="p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold">分析報告</h2>
-                                <button onClick={() => setMatchResult(null)}><X /></button>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-gray-800">AI 配對分析報告</h2>
+                                <button onClick={() => setMatchResult(null)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20} /></button>
                             </div>
-                            <div className="text-center text-6xl font-bold mb-4 text-blue-600">{matchResult?.report?.match_score}</div>
-                            <p>{matchResult?.report?.summary}</p>
-                            {/* ... 其他內容 ... */}
+
+                            {/* 分數 */}
+                            <div className="text-center mb-6">
+                                <div className={`text-7xl font-bold mb-2 ${matchResult?.report?.match_score >= 80 ? 'text-green-600' : matchResult?.report?.match_score >= 60 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                    {matchResult?.report?.match_score}
+                                </div>
+                                <p className="text-gray-400 text-sm">AI 適配分數</p>
+                            </div>
+
+                            {/* 總評 */}
+                            <div className="bg-blue-50 p-4 rounded-xl mb-4 text-gray-700 text-sm leading-relaxed">
+                                {matchResult?.report?.summary}
+                            </div>
+
+                            {/* 優缺點 */}
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="bg-green-50 p-4 rounded-xl">
+                                    <h4 className="font-bold text-green-700 mb-2">✅ 優勢</h4>
+                                    <ul className="space-y-1">
+                                        {matchResult?.report?.pros?.map((pro, i) => (
+                                            <li key={i} className="text-sm text-gray-700 flex gap-2"><span className="text-green-500">•</span>{pro}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="bg-orange-50 p-4 rounded-xl">
+                                    <h4 className="font-bold text-orange-700 mb-2">⚠️ 風險</h4>
+                                    <ul className="space-y-1">
+                                        {matchResult?.report?.cons?.map((con, i) => (
+                                            <li key={i} className="text-sm text-gray-700 flex gap-2"><span className="text-orange-400">•</span>{con}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* 建議面試題 */}
+                            {matchResult?.report?.interview_questions?.length > 0 && (
+                                <div className="bg-gray-50 p-4 rounded-xl">
+                                    <h4 className="font-bold text-gray-700 mb-3">❓ 建議面試題</h4>
+                                    <div className="space-y-2">
+                                        {matchResult.report.interview_questions.map((q, i) => (
+                                            <div key={i} className="text-sm text-gray-700 bg-white p-3 rounded-lg border border-gray-100">
+                                                <span className="font-bold text-gray-400 mr-2">Q{i + 1}.</span>{q}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

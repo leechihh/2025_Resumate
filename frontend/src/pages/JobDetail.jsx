@@ -316,9 +316,18 @@ export default function JobDetail() {
                                     </td>
 
                                     <td className="p-4">
-                                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100">
-                                            {app.status}
-                                        </span>
+                                        {(() => {
+                                            const info = STATUS_MAP[app.status];
+                                            return info ? (
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${info.color}`}>
+                                                    {info.label}
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-500">
+                                                    {app.status}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
 
                                     <td className="p-4 text-right">

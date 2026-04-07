@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from '../api/axios';
-import { X, Sparkles, Send, Save, RefreshCw } from 'lucide-react';
+import { X, Sparkles, Send, Save, RefreshCw, Loader2 } from 'lucide-react';
 
 export default function EmailComposeModal({ isOpen, onClose, application, onSuccess }) {
     if (!isOpen || !application) return null;
@@ -12,20 +12,22 @@ export default function EmailComposeModal({ isOpen, onClose, application, onSucc
     // AI 潤飾相關
     const [polishInstruction, setPolishInstruction] = useState("");
     const [isPolishing, setIsPolishing] = useState(false);
+    const [isSending, setIsSending] = useState(false);
 
-    // 1. 載入模板 (這可以是後端 API，這裡先模擬)
+    // 1. 載入模板
     const loadTemplate = (type) => {
-        // 理想狀況：call API GET /api/templates/?type={type}
-        // 這裡先寫死示範邏輯
         const candidateName = application.candidate?.name || "候選人";
         const jobTitle = application.job?.title || "職缺";
 
         if (type === 'interview') {
-            setSubject(`面試邀約：${jobTitle} - ${candidateName}`);
-            setBody(`${candidateName} 您好，\n\n感謝您應徵 ${jobTitle}。我們對您的經歷印象深刻，想邀請您參加面試...\n\nBest Regards,\nHR Team`);
+            setSubject(`【面試邀約】${jobTitle} - ${candidateName} 您好`);
+            setBody(`${candidateName} 您好，\n\n感謝您應徵我們的 ${jobTitle} 職位，您的經歷讓我們印象深刻。\n\n我們誠摯邀請您參加進一步面試，請問您近期是否方便安排時間？煩請回信告知您的可用時段，我們將盡快安排。\n\n期待與您進一步交流！\n\nBest Regards,\nHR Team`);
         } else if (type === 'rejection') {
-            setSubject(`感謝函：${jobTitle} - ${candidateName}`);
-            setBody(`${candidateName} 您好，\n\n感謝您投遞履歷。經過審慎評估，我們決定...\n\nBest Regards,\nHR Team`);
+            setSubject(`【感謝函】感謝您應徵 ${jobTitle}`);
+            setBody(`${candidateName} 您好，\n\n非常感謝您花時間應徵我們的 ${jobTitle} 職位，以及對本公司的興趣。\n\n經過審慎的評估，我們最終選擇了其他與目前職缺需求更為吻合的候選人。這並不代表您的能力有所不足，而是與我們目前的需求較為貼近。\n\n我們非常感激您的應徵，希望未來有機會再次合作。祝您求職順利！\n\nBest Regards,\nHR Team`);
+        } else if (type === 'offer') {
+            setSubject(`【錄取通知】恭喜！${jobTitle} - Offer Letter`);
+            setBody(`${candidateName} 您好，\n\n恭喜您！\n\n我們非常高興地通知您，經過審慎評估，您已通過 ${jobTitle} 的所有面試流程，我們誠摯地向您發出正式錄取邀請。\n\n我們對您的專業背景與能力深感期待，相信您將為團隊帶來豐富的貢獻。後續將有人資專員與您聯繫，確認報到日期與相關細節。\n\n請於收到此信後 3 個工作天內確認您是否接受此邀請。\n\n再次恭喜您，期待您的加入！\n\nBest Regards,\nHR Team`);
         }
         setEmailType(type);
     };
@@ -54,7 +56,7 @@ export default function EmailComposeModal({ isOpen, onClose, application, onSucc
         }
     };
 
-    // 3. 儲存草稿 (存到 EmailLog)
+    // 3. 儲存草稿
     const handleSaveDraft = async () => {
         try {
             await axios.post('email-tasks/', {
@@ -65,10 +67,36 @@ export default function EmailComposeModal({ isOpen, onClose, application, onSucc
                 status: 'draft'
             });
             alert("已存入信件中心");
-            onSuccess(); // 關閉視窗並刷新
+            onSuccess();
             onClose();
         } catch (error) {
             alert("儲存失敗");
+        }
+    };
+
+    // 4. 立即寄出：先存草稿，再呼叫 send API
+    const handleSendNow = async () => {
+        if (!subject || !body) {
+            alert("請填寫主旨與內文");
+            return;
+        }
+        setIsSending(true);
+        try {
+            const draftRes = await axios.post('email-tasks/', {
+                application: application.id,
+                subject: subject,
+                body: body,
+                email_type: emailType,
+                status: 'draft'
+            });
+            await axios.post(`email-tasks/${draftRes.data.id}/send/`);
+            alert(`✅ 信件已成功寄出至 ${application.candidate?.email}`);
+            onSuccess();
+            onClose();
+        } catch (error) {
+            alert("❌ 寄送失敗：" + (error.response?.data?.error || error.message));
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -138,9 +166,17 @@ export default function EmailComposeModal({ isOpen, onClose, application, onSucc
                     <button onClick={onClose} className="px-5 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium">取消</button>
                     <button
                         onClick={handleSaveDraft}
-                        className="px-5 py-2 bg-gray-800 text-white rounded-lg font-medium hover:bg-black flex items-center gap-2"
+                        className="px-5 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-900 flex items-center gap-2"
                     >
-                        <Save size={18} /> 存入待寄清單
+                        <Save size={18} /> 存入草稿
+                    </button>
+                    <button
+                        onClick={handleSendNow}
+                        disabled={isSending}
+                        className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                        立即寄出
                     </button>
                 </div>
 
