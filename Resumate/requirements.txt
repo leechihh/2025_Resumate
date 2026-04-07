@@ -1,0 +1,19 @@
+# Web framework
+Django==5.2.6
+djangorestframework==3.16.1
+django-cors-headers==4.9.0
+
+# Database
+psycopg2-binary==2.9.11
+
+# Environment variables
+python-dotenv==1.2.1
+
+# PDF parsing
+pypdf==6.5.0
+
+# Google Gemini AI
+google-genai==1.56.0
+
+# HuggingFace datasets (management command: load_dataset)
+datasets==4.4.2
