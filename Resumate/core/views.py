@@ -27,7 +27,7 @@ class ResumeUploadView(APIView):
             return Response({"error": "未提供檔案"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            print(f"📥 接收到檔案: {file_obj.name}")
+            print(f"[upload] 接收到檔案: {file_obj.name}")
 
             # 2. 呼叫 Service: PDF 轉文字
             # 注意：extract_text_from_pdf 已經寫好可以處理 Django 的 file_obj
@@ -37,7 +37,7 @@ class ResumeUploadView(APIView):
                 return Response({"error": "無法讀取 PDF 內容"}, status=status.HTTP_400_BAD_REQUEST)
 
             # 3. 呼叫 Service: AI 分析
-            print("🤖 正在呼叫 AI 進行分析...")
+            print("[upload] 正在呼叫 AI 進行分析...")
             ai_data = parse_resume_with_gemini(text)
             
             if not ai_data:
@@ -56,7 +56,7 @@ class ResumeUploadView(APIView):
             phone = p_info.get('phone', '')
 
             # 5. 寫入資料庫 (update_or_create 避免重複上傳同一人報錯)
-            print(f"💾 正在寫入資料庫: {name}")
+            print(f"[upload] 正在寫入資料庫: {name}")
             candidate, created = Candidate.objects.update_or_create(
                 email=email,
                 defaults={
@@ -76,7 +76,7 @@ class ResumeUploadView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(f"❌ 發生錯誤: {e}")
+            print(f"[upload] 發生錯誤: {e}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class MatchJobView(APIView):
@@ -101,7 +101,7 @@ class MatchJobView(APIView):
             job = JobPosition.objects.get(id=job_id)
 
             # 3. 呼叫 AI 進行分析 (傳入 履歷JSON, JD文字, 文化列表)
-            print(f"🤖 正在分析 {candidate.name} 與 {job.title} 的適配度...")
+            print(f"[match] 正在分析 {candidate.name} 與 {job.title} 的適配度...")
             
             # 注意：這裡我們直接用 candidate.parsed_data，這是之前 AI 解析好存進去的
             analysis_result = analyze_job_match(
